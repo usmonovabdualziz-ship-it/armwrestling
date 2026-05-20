@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arm Wrestle Simulator — Гайд</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --orange:#ff7700; --yellow:#ffe500; --dark:#09090f; --card:#13131e;
+  --border:rgba(255,255,255,0.07); --text:#e0e0f0; --muted:#7777aa;
+  --green:#00dd88; --cosmic:#ff44cc; --ghost:rgba(190,210,255,0.95);
+  --blue:#4488ff; --purple:#aa44ff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--dark);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(255,68,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,68,0,0.025) 1px,transparent 1px);
+  background-size:44px 44px;pointer-events:none;z-index:0;}
+
+/* NAV */
+.topnav{position:sticky;top:0;z-index:100;background:rgba(9,9,15,0.95);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);display:flex;justify-content:center;gap:3px;padding:9px 16px;flex-wrap:wrap;}
+.topnav a{font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;color:var(--muted);text-decoration:none;
+  padding:7px 14px;border:1px solid transparent;border-radius:3px;transition:all .2s;text-transform:uppercase;}
+.topnav a:hover{color:var(--orange);border-color:rgba(255,120,0,.4);background:rgba(255,100,0,.07);}
+
+/* HEADER */
+header{position:relative;text-align:center;padding:70px 20px 48px;overflow:hidden;z-index:1;}
+header::before{content:'';position:absolute;top:-80px;left:50%;transform:translateX(-50%);
+  width:700px;height:500px;background:radial-gradient(ellipse,rgba(255,68,0,.18) 0%,transparent 65%);pointer-events:none;}
+.game-tag{font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:5px;color:var(--orange);text-transform:uppercase;margin-bottom:14px;display:block;}
+h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(56px,11vw,120px);line-height:.92;letter-spacing:3px;
+  background:linear-gradient(135deg,#fff 0%,#ffaa00 45%,#ff3300 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 50px rgba(255,100,0,.35));}
+.subtitle{font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:5px;color:var(--muted);margin-top:14px;}
+
+/* SECTION */
+section{max-width:1080px;margin:0 auto;padding:0 20px 70px;position:relative;z-index:1;}
+.sec-title{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:2px;color:#fff;margin-bottom:6px;
+  display:flex;align-items:center;gap:14px;}
+.sec-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(255,100,0,.45),transparent);}
+.sec-sub{color:var(--muted);font-size:14px;margin-bottom:26px;}
+
+/* CARDS GRID */
+.grid-3{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;}
+.grid-4{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+.grid-5{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;}
+
+/* MACHINE / MUTATION CARD */
+.m-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px 22px 22px;
+  position:relative;overflow:hidden;transition:transform .2s,border-color .2s,box-shadow .2s;}
+.m-card:hover{transform:translateY(-4px);box-shadow:0 10px 36px rgba(0,0,0,.5);}
+.m-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--ac,#ff7700),transparent);}
+.m-rarity{position:absolute;top:14px;right:14px;font-family:'Orbitron',sans-serif;font-size:8px;
+  letter-spacing:2px;padding:3px 8px;border-radius:2px;text-transform:uppercase;}
+.r-rare{background:rgba(68,136,255,.15);color:#88aaff;}
+.r-epic{background:rgba(170,68,255,.15);color:#cc88ff;}
+.r-legendary{background:rgba(255,200,0,.15);color:var(--yellow);}
+.r-mythic{background:rgba(255,68,200,.15);color:#ff88ee;}
+.m-icon{font-size:30px;margin-bottom:10px;display:block;}
+.m-name{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;color:#fff;margin-bottom:4px;}
+.m-where{font-size:12px;color:var(--muted);margin-bottom:8px;}
+.m-desc{font-size:13px;color:#aaaacc;line-height:1.5;margin-bottom:14px;}
+.m-boost{display:inline-flex;align-items:center;border:1px solid;border-radius:4px;padding:4px 12px;
+  font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;}
+.b-gold   {background:rgba(255,200,0,.1);border-color:rgba(255,200,0,.4);color:var(--yellow);}
+.b-void   {background:rgba(150,0,255,.1);border-color:rgba(150,0,255,.4);color:#bb66ff;}
+.b-pristine{background:rgba(0,220,140,.1);border-color:rgba(0,220,140,.4);color:var(--green);}
+.b-ghost  {background:rgba(180,200,255,.08);border-color:rgba(180,200,255,.3);color:var(--ghost);animation:ghost 2s infinite;}
+.b-glow   {background:rgba(255,255,100,.08);border-color:rgba(255,255,100,.3);color:#ffff88;}
+.b-rainbow{background:rgba(255,150,0,.1);border-color:rgba(255,150,0,.4);color:var(--orange);}
+.b-cosmic {background:rgba(255,60,200,.1);border-color:rgba(255,60,200,.4);color:var(--cosmic);animation:cosmicpulse 2s infinite;}
+.b-goliath{background:rgba(255,100,0,.1);border-color:rgba(255,100,0,.4);color:var(--orange);}
+@keyframes ghost{0%,100%{box-shadow:0 0 6px rgba(180,200,255,.2)}50%{box-shadow:0 0 18px rgba(180,200,255,.5)}}
+@keyframes cosmicpulse{0%,100%{box-shadow:0 0 6px rgba(255,60,200,.2)}50%{box-shadow:0 0 18px rgba(255,60,200,.5)}}
+
+/* CHANCE BADGE */
+.chance{display:inline-block;margin-left:8px;font-size:11px;color:var(--muted);font-family:'Orbitron',sans-serif;}
+
+/* SIZE CARDS */
+.size-card{background:var(--card);border:1px solid var(--border);border-radius:8px;
+  padding:18px 16px;text-align:center;transition:transform .2s,border-color .2s;}
+.size-card:hover{transform:scale(1.03);border-color:rgba(255,100,0,.3);}
+.size-icon{font-size:28px;margin-bottom:8px;display:block;}
+.size-name{font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:1px;color:#fff;margin-bottom:4px;}
+.size-req{font-size:12px;color:var(--muted);margin-bottom:10px;}
+.size-val{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--orange);}
+
+/* PAINT CARDS */
+.paint-card{border-radius:8px;padding:16px 14px;border:1px solid rgba(255,255,255,.07);transition:transform .2s;cursor:default;}
+.paint-card:hover{transform:scale(1.04);}
+.swatch{width:34px;height:34px;border-radius:50%;margin-bottom:10px;border:2px solid rgba(255,255,255,.15);}
+.paint-name{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:1px;color:#fff;margin-bottom:3px;}
+.paint-note{font-size:11px;color:rgba(255,255,255,.4);}
+
+/* LEVEL TABLE */
+.lvl-table{width:100%;border-collapse:collapse;}
+.lvl-table th{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:2px;color:var(--muted);
+  text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);}
+.lvl-table td{padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.04);font-size:14px;}
+.lvl-table tr:hover td{background:rgba(255,255,255,.02);}
+.lvl-num{font-family:'Orbitron',sans-serif;font-size:12px;color:var(--orange);font-weight:700;}
+.bar-wrap{width:110px;height:5px;background:rgba(255,255,255,.08);border-radius:3px;}
+.bar{height:5px;border-radius:3px;background:linear-gradient(90deg,var(--orange),var(--yellow));}
+
+/* CALCULATOR */
+.calc-box{background:var(--card);border:1px solid rgba(255,100,0,.2);border-radius:12px;padding:28px 26px;
+  box-shadow:0 0 60px rgba(255,68,0,.05);}
+.calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:22px;}
+@media(max-width:580px){.calc-grid{grid-template-columns:1fr;}}
+.c-label{font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;color:var(--muted);
+  margin-bottom:8px;display:block;text-transform:uppercase;}
+.c-select,.c-input{width:100%;background:#0d0d18;border:1px solid rgba(255,100,0,.25);border-radius:6px;
+  color:var(--text);font-family:'Rajdhani',sans-serif;font-size:15px;padding:10px 14px;outline:none;
+  transition:border-color .2s;-webkit-appearance:none;appearance:none;}
+.c-select:focus,.c-input:focus{border-color:var(--orange);}
+.calc-btn{width:100%;padding:13px;background:linear-gradient(135deg,#ff5500,#ff9900);border:none;
+  border-radius:8px;color:#000;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;
+  cursor:pointer;transition:opacity .2s,transform .1s;margin-bottom:22px;}
+.calc-btn:hover{opacity:.88;transform:scale(.99);}
+.calc-result{background:#0a0a14;border:1px solid rgba(255,200,0,.2);border-radius:8px;
+  padding:22px 24px;display:none;}
+.calc-result.show{display:block;animation:pop .3s ease;}
+@keyframes pop{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+.r-title{font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:3px;color:var(--muted);margin-bottom:16px;}
+.r-rows{display:grid;gap:9px;}
+.r-row{display:flex;justify-content:space-between;align-items:center;}
+.r-key{font-size:13px;color:var(--muted);}
+.r-val{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--yellow);}
+.r-val.big{font-size:22px;color:var(--orange);}
+.r-div{height:1px;background:var(--border);}
+
+/* INFO BOX */
+.info-box{background:rgba(255,100,0,.06);border:1px solid rgba(255,100,0,.2);border-radius:8px;
+  padding:14px 18px;margin-bottom:24px;font-size:14px;color:#ccccee;line-height:1.6;}
+.info-box strong{color:var(--orange);}
+
+footer{text-align:center;padding:34px 20px;border-top:1px solid var(--border);color:var(--muted);
+  font-size:12px;letter-spacing:1px;position:relative;z-index:1;}
+footer span{color:var(--orange);}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a href="#machines">🔧 Машины</a>
+  <a href="#mutations">✨ Мутации</a>
+  <a href="#sizes">📏 Размеры</a>
+  <a href="#paints">🎨 Краски</a>
+  <a href="#levels">⭐ Уровни</a>
+  <a href="#calc">🧮 Калькулятор</a>
+</nav>
+
+<header>
+  <span class="game-tag">🎮 Roblox Fan Guide</span>
+  <h1>Arm Wrestle<br>Simulator</h1>
+  <p class="subtitle">Полный гайд · Машины · Мутации · Калькулятор</p>
+</header>
+
+<!-- MACHINES -->
+<section id="machines">
+  <div class="sec-title">Машины (варианты петов)</div>
+  <p class="sec-sub">Машины меняют вариант пета — Golden → Void → Pristine. Мутации отдельно!</p>
+
+  <div class="grid-3">
+
+    <div class="m-card" style="--ac:#ffe500;">
+      <span class="m-rarity r-legendary">Legendary</span>
+      <span class="m-icon">🟡</span>
+      <div class="m-name">Golden Machine</div>
+      <div class="m-where">📍 Space Gym / Cyber Gym</div>
+      <div class="m-desc">Превращает обычного пета в Golden. Клади 1–5 петов одного типа — каждый +20% шанс. При провале все теряются!</div>
+      <div class="m-boost b-gold">+50% к силе</div>
+    </div>
+
+    <div class="m-card" style="--ac:#aa44ff;">
+      <span class="m-rarity r-epic">Epic</span>
+      <span class="m-icon">🌀</span>
+      <div class="m-name">Void Machine</div>
+      <div class="m-where">📍 Beach Gym / Private Island</div>
+      <div class="m-desc">Превращает Golden пета в Void. Успех 100%, но ждёшь <strong>5 реальных часов</strong>.</div>
+      <div class="m-boost b-void">×2 к силе (+100%)</div>
+    </div>
+
+    <div class="m-card" style="--ac:#00dd88;">
+      <span class="m-rarity r-mythic">Mythic</span>
+      <span class="m-icon">💠</span>
+      <div class="m-name">Pristine Machine</div>
+      <div class="m-where">📍 Void World / поздние миры</div>
+      <div class="m-desc">Следующий шаг после Void. Pristine-пет значительно мощнее Void-версии.</div>
+      <div class="m-boost b-pristine">+150% к силе</div>
+    </div>
+
+    <div class="m-card" style="--ac:#ff5500;">
+      <span class="m-rarity r-epic">Epic</span>
+      <span class="m-icon">🗿</span>
+      <div class="m-name">Goliath Machine</div>
+      <div class="m-where">📍 Beach Gym / Space Gym</div>
+      <div class="m-desc">Превращает Huge пета в Goliath. Нужно ждать минимум 10 минут. Огромный прирост.</div>
+      <div class="m-boost b-goliath">Размер: +250% к базе</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- MUTATIONS -->
+<section id="mutations">
+  <div class="sec-title">Мутации петов</div>
+  <p class="sec-sub">Mutation Machine находится в Nuclear Bunker. Сейчас 4 мутации — Cosmic добавили в конце 2024</p>
+
+  <div class="info-box">
+    💡 Мутации и варианты машин <strong>складываются</strong>! Например Void Ghost пет = ×2 (Void) × ×2 (Ghost) = <strong>×4 к базе</strong>.
+    Cosmic — самая редкая и мощная мутация, добавлена в декабре 2024.
+  </div>
+
+  <div class="grid-3">
+
+    <div class="m-card" style="--ac:#ffff66;">
+      <span class="m-rarity r-rare">Common</span>
+      <span class="m-icon">✨</span>
+      <div class="m-name">Glowing</div>
+      <div class="m-where">📍 Mutation Machine — Nuclear Bunker</div>
+      <div class="m-desc">Самый частый результат мутации. Пет светится. Базовый шанс — <strong>64%</strong>.</div>
+      <div class="m-boost b-glow">×1.2 к силе пета</div>
+      <span class="chance">64% шанс</span>
+    </div>
+
+    <div class="m-card" style="--ac:#ff9900;">
+      <span class="m-rarity r-rare">Rare</span>
+      <span class="m-icon">🌈</span>
+      <div class="m-name">Rainbow</div>
+      <div class="m-where">📍 Mutation Machine — Nuclear Bunker</div>
+      <div class="m-desc">Средний результат. Радужный эффект, заметно лучше Glowing.</div>
+      <div class="m-boost b-rainbow">×1.35 к силе пета</div>
+      <span class="chance">35% шанс</span>
+    </div>
+
+    <div class="m-card" style="--ac:#aaaaff;">
+      <span class="m-rarity r-epic">Epic</span>
+      <span class="m-icon">👻</span>
+      <div class="m-name">Ghost</div>
+      <div class="m-where">📍 Mutation Machine — Nuclear Bunker</div>
+      <div class="m-desc">Редкая мутация. Пет невидим. Жертвуй других петов чтобы повысить шанс (макс ~10%).</div>
+      <div class="m-boost b-ghost">×2 к силе пета</div>
+      <span class="chance">~1% шанс (макс 10%)</span>
+    </div>
+
+    <div class="m-card" style="--ac:#ff44cc;">
+      <span class="m-rarity r-mythic">Mythic</span>
+      <span class="m-icon">🌌</span>
+      <div class="m-name">Cosmic</div>
+      <div class="m-where">📍 Mutation Machine — добавлена дек. 2024</div>
+      <div class="m-desc">Новейшая и самая мощная мутация. Космический эффект. Крайне редкая — шанс очень мал.</div>
+      <div class="m-boost b-cosmic">~×2.5 к силе пета</div>
+      <span class="chance">??% очень редко</span>
+    </div>
+
+  </div>
+</section>
+
+<!-- SIZES -->
+<section id="sizes">
+  <div class="sec-title">Размеры петов</div>
+  <p class="sec-sub">3 пета одного типа + размера = следующий уровень. Складывается с вариантами и мутациями!</p>
+  <div class="grid-4">
+    <div class="size-card">
+      <span class="size-icon">🐣</span>
+      <div class="size-name">Baby</div>
+      <div class="size-req">Базовый</div>
+      <div class="size-val">+0%</div>
+    </div>
+    <div class="size-card">
+      <span class="size-icon">🐤</span>
+      <div class="size-name">Big</div>
+      <div class="size-req">3× Baby одного типа</div>
+      <div class="size-val">+50%</div>
+    </div>
+    <div class="size-card">
+      <span class="size-icon">🐉</span>
+      <div class="size-name">Huge</div>
+      <div class="size-req">3× Big одного типа</div>
+      <div class="size-val">+100%</div>
+    </div>
+    <div class="size-card" style="border-color:rgba(255,100,0,.3);">
+      <span class="size-icon">👹</span>
+      <div class="size-name">Goliath</div>
+      <div class="size-req">Goliath Machine (10+ мин)</div>
+      <div class="size-val" style="color:var(--yellow);">+250%</div>
+    </div>
+  </div>
+</section>
+
+<!-- PAINTS -->
+<section id="paints">
+  <div class="sec-title">Краски</div>
+  <p class="sec-sub">Только косметика — на силу не влияют, но свой стиль важен 🔥</p>
+  <div class="grid-5">
+
+    <div class="paint-card" style="background:linear-gradient(135deg,#0e0e0e,#1f1f1f);">
+      <div class="swatch" style="background:#111;"></div>
+      <div class="paint-name">Shadow Black</div><div class="paint-note">Базовая</div>
+    </div>
+    <div class="paint-card" style="background:linear-gradient(135deg,#0a0a20,#14143a);">
+      <div class="swatch" style="background:linear-gradient(135deg,#2244ff,#5588ff);box-shadow:0 0 8px rgba(80,120,255,.4);"></div>
+      <div class="paint-name">Electric Blue</div><div class="paint-note">Редкая</div>
+    </div>
+    <div class="paint-card" style="background:linear-gradient(135deg,#1a0d08,#2a1508);">
+      <div class="swatch" style="background:linear-gradient(135deg,#ff4400,#ff8800);box-shadow:0 0 8px rgba(255,80,0,.4);"></div>
+      <div class="paint-name">Inferno</div><div class="paint-note">Популярная</div>
+    </div>
+    <div class="paint-card" style="background:linear-gradient(135deg,#081508,#0d250d);">
+      <div class="swatch" style="background:linear-gradient(135deg,#00cc44,#00ff88);box-shadow:0 0 8px rgba(0,200,100,.3);"></div>
+      <div class="paint-name">Toxic Green</div><div class="paint-note">Ивент</div>
+    </div>
+    <div class="paint-card" style="background:linear-gradient(135deg,#150820,#200a38);">
+      <div class="swatch" style="background:linear-gradient(135deg,#8800cc,#cc44ff);box-shadow:0 0 8px rgba(180,50,255,.4);"></div>
+      <div class="paint-name">Galaxy</div><div class="paint-note">Epic</div>
+    </div>
+    <div class="paint-card" style="background:linear-gradient(135deg,#181400,#282000);">
+      <div class="swatch" style="background:linear-gradient(135deg,#ffcc00,#ffee44);box-shadow:0 0 12px rgba(255,210,0,.5);"></div>
+      <div class="paint-name">Gold</div><div class="paint-note">Legendary</div>
+    </div>
+    <div class="paint-card" style="background:linear-gradient(135deg,#10181c,#182028);">
+      <div class="swatch" style="background:linear-gradient(135deg,#99ccee,#ddeeff);box-shadow:0 0 8px rgba(160,210,255,.3);"></div>
+      <div class="paint-name">Ice Chrome</div><div class="paint-note">Зима</div>
+    </div>
+    <div class="paint-card" style="background:linear-gradient(135deg,#180f18,#281028);">
+      <div class="swatch" style="background:linear-gradient(135deg,#ee0066,#ff66aa);box-shadow:0 0 8px rgba(255,50,120,.3);"></div>
+      <div class="paint-name">Hot Pink</div><div class="paint-note">Лимит</div>
+    </div>
+    <div class="paint-card" style="background:linear-gradient(135deg,#081418,#0a2030);">
+      <div class="swatch" style="background:linear-gradient(135deg,#00aaee,#0066cc);box-shadow:0 0 8px rgba(0,160,240,.3);"></div>
+      <div class="paint-name">Ocean Wave</div><div class="paint-note">Магазин</div>
+    </div>
+    <div class="paint-card" style="background:linear-gradient(135deg,#150808,#280d0d);">
+      <div class="swatch" style="background:linear-gradient(135deg,#cc0000,#ff4444);"></div>
+      <div class="paint-name">Blood Red</div><div class="paint-note">Классика</div>
+    </div>
+    <div class="paint-card" style="background:linear-gradient(135deg,#0c0c10,#181824);">
+      <div class="swatch" style="background:linear-gradient(135deg,#999,#fff);"></div>
+      <div class="paint-name">Chrome</div><div class="paint-note">Базовая</div>
+    </div>
+    <div class="paint-card" style="background:linear-gradient(135deg,#0a1510,#102518);">
+      <div class="swatch" style="background:linear-gradient(135deg,#004433,#00cc88);"></div>
+      <div class="paint-name">Void Green</div><div class="paint-note">Void-стиль</div>
+    </div>
+    <div class="paint-card" style="background:linear-gradient(135deg,#100a18,#1a0a28);">
+      <div class="swatch" style="background:linear-gradient(135deg,#330066,#9900ff);box-shadow:0 0 10px rgba(150,0,255,.4);"></div>
+      <div class="paint-name">Deep Void</div><div class="paint-note">Void World</div>
+    </div>
+    <div class="paint-card" style="background:linear-gradient(135deg,#0a1820,#0a2535);">
+      <div class="swatch" style="background:linear-gradient(135deg,#003366,#0055aa,#0099ff);box-shadow:0 0 8px rgba(0,100,255,.3);"></div>
+      <div class="paint-name">Cosmic Blue</div><div class="paint-note">Space Center</div>
+    </div>
+    <div class="paint-card" style="background:linear-gradient(135deg,#181008,#281808);">
+      <div class="swatch" style="background:linear-gradient(135deg,#994400,#ff8800,#ffcc44);box-shadow:0 0 10px rgba(255,140,0,.4);"></div>
+      <div class="paint-name">Solar Flare</div><div class="paint-note">Space Gym</div>
+    </div>
+    <div class="paint-card" style="background:linear-gradient(135deg,#101820,#18283a);">
+      <div class="swatch" style="background:linear-gradient(135deg,#ffffff,#aaccff,#ffffff);box-shadow:0 0 10px rgba(200,220,255,.5);"></div>
+      <div class="paint-name">Angel White</div><div class="paint-note">Ивент</div>
+    </div>
+    <div class="paint-card" style="background:linear-gradient(135deg,#0a1008,#121a10);">
+      <div class="swatch" style="background:linear-gradient(135deg,#224422,#448844,#66cc66);box-shadow:0 0 8px rgba(80,180,80,.3);"></div>
+      <div class="paint-name">Forest</div><div class="paint-note">Базовая</div>
+    </div>
+    <div class="paint-card" style="background:linear-gradient(135deg,#181018,#281428);">
+      <div class="swatch" style="background:conic-gradient(#ff0000,#ff9900,#ffff00,#00ff00,#0099ff,#9900ff,#ff0000);box-shadow:0 0 10px rgba(255,100,100,.3);"></div>
+      <div class="paint-name">Rainbow</div><div class="paint-note">Rainbow Mut</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- LEVELS -->
+<section id="levels">
+  <div class="sec-title">Уровни петов</div>
+  <p class="sec-sub">Каждый уровень = +1% к силе пета. Макс уровень — 250 (+250%). Качай через энчантмент стол.</p>
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+    <table class="lvl-table">
+      <thead>
+        <tr>
+          <th>Уровень</th>
+          <th>Буст к силе</th>
+          <th>Прогресс</th>
+          <th>Локация</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="lvl-num">Lvl 1</td><td>+0%</td><td><div class="bar-wrap"><div class="bar" style="width:1%"></div></div></td><td style="color:var(--muted);font-size:13px;">Старт</td></tr>
+        <tr><td class="lvl-num">Lvl 10</td><td>+10%</td><td><div class="bar-wrap"><div class="bar" style="width:10%"></div></div></td><td style="color:var(--muted);font-size:13px;">School Gym</td></tr>
+        <tr><td class="lvl-num">Lvl 25</td><td>+25%</td><td><div class="bar-wrap"><div class="bar" style="width:22%"></div></div></td><td style="color:var(--muted);font-size:13px;">Space Gym</td></tr>
+        <tr><td class="lvl-num">Lvl 50</td><td>+50%</td><td><div class="bar-wrap"><div class="bar" style="width:40%"></div></div></td><td style="color:var(--muted);font-size:13px;">Beach Gym</td></tr>
+        <tr><td class="lvl-num">Lvl 100</td><td>+100%</td><td><div class="bar-wrap"><div class="bar" style="width:65%"></div></div></td><td style="color:var(--muted);font-size:13px;">Nuclear Bunker</td></tr>
+        <tr><td class="lvl-num">Lvl 150</td><td>+150%</td><td><div class="bar-wrap"><div class="bar" style="width:80%"></div></div></td><td style="color:var(--muted);font-size:13px;">Void World</td></tr>
+        <tr><td class="lvl-num">Lvl 200</td><td>+200%</td><td><div class="bar-wrap"><div class="bar" style="width:90%"></div></div></td><td style="color:var(--muted);font-size:13px;">Space Center</td></tr>
+        <tr><td class="lvl-num">Lvl 250</td><td>+250%</td><td><div class="bar-wrap"><div class="bar" style="width:100%"></div></div></td><td style="color:var(--muted);font-size:13px;">Макс уровень</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- CALCULATOR -->
+<section id="calc">
+  <div class="sec-title">🧮 Калькулятор силы пета</div>
+  <p class="sec-sub">Введи силу пета и его параметры — получи итоговую силу с учётом всех множителей</p>
+
+  <div class="info-box">
+    📊 Пример: пет 7.6B силы с Goliath + Void + Ghost + Lvl 250 → итог будет ~690–800B
+  </div>
+
+  <div class="calc-box">
+    <div class="calc-grid">
+
+      <div>
+        <span class="c-label">Базовая сила пета (число)</span>
+        <input class="c-input" type="number" id="baseVal" placeholder="Напр: 7.6 (миллиарды)" min="0.001" step="any" value="7.6">
+      </div>
+      <div>
+        <span class="c-label">Единица измерения</span>
+        <select class="c-select" id="unitSel">
+          <option value="1">Просто число</option>
+          <option value="1000">K (тысяч)</option>
+          <option value="1000000">M (миллионов)</option>
+          <option value="1000000000" selected>B (миллиардов)</option>
+          <option value="1000000000000">T (триллионов)</option>
+        </select>
+      </div>
+      <div>
+        <span class="c-label">Вариант (машина)</span>
+        <select class="c-select" id="variantSel">
+          <option value="1">Обычный (×1)</option>
+          <option value="1.5">Golden (+50%)</option>
+          <option value="2">Void (×2)</option>
+          <option value="2.5">Pristine (~×2.5)</option>
+        </select>
+      </div>
+      <div>
+        <span class="c-label">Размер пета</span>
+        <select class="c-select" id="sizeSel">
+          <option value="1">Baby (×1)</option>
+          <option value="1.5">Big (×1.5)</option>
+          <option value="2">Huge (×2)</option>
+          <option value="3.5">Goliath (×3.5)</option>
+        </select>
+      </div>
+      <div>
+        <span class="c-label">Мутация</span>
+        <select class="c-select" id="mutSel">
+          <option value="1">Нет</option>
+          <option value="1.2">Glowing (×1.2)</option>
+          <option value="1.35">Rainbow (×1.35)</option>
+          <option value="2">Ghost (×2)</option>
+          <option value="2.5">Cosmic (~×2.5)</option>
+        </select>
+      </div>
+      <div>
+        <span class="c-label">Уровень пета (1–250)</span>
+        <input class="c-input" type="number" id="lvlVal" placeholder="Напр: 250" min="1" max="250" value="250">
+      </div>
+      <div>
+        <span class="c-label">Количество таких петов</span>
+        <input class="c-input" type="number" id="countVal" placeholder="Напр: 3" min="1" max="40" value="1">
+      </div>
+      <div>
+        <span class="c-label">Другие петы — их суммарная сила</span>
+        <input class="c-input" type="number" id="otherVal" placeholder="0 если нет" min="0" step="any" value="0">
+      </div>
+
+    </div>
+
+    <button class="calc-btn" onclick="calculate()">⚡ ПОСЧИТАТЬ СИЛУ</button>
+
+    <div class="calc-result" id="calcResult">
+      <div class="r-title">— РЕЗУЛЬТАТ —</div>
+      <div class="r-rows">
+        <div class="r-row"><span class="r-key">Базовая сила пета</span><span class="r-val" id="r-base">—</span></div>
+        <div class="r-div"></div>
+        <div class="r-row"><span class="r-key">× Вариант (машина)</span><span class="r-val" id="r-var">—</span></div>
+        <div class="r-row"><span class="r-key">× Размер пета</span><span class="r-val" id="r-size">—</span></div>
+        <div class="r-row"><span class="r-key">× Мутация</span><span class="r-val" id="r-mut">—</span></div>
+        <div class="r-row"><span class="r-key">× Буст уровня</span><span class="r-val" id="r-lvl">—</span></div>
+        <div class="r-div"></div>
+        <div class="r-row"><span class="r-key">Сила 1 пета</span><span class="r-val" id="r-one">—</span></div>
+        <div class="r-row"><span class="r-key">Таких петов × кол-во</span><span class="r-val" id="r-multi">—</span></div>
+        <div class="r-row"><span class="r-key">+ Другие петы</span><span class="r-val" id="r-other">—</span></div>
+        <div class="r-div"></div>
+        <div class="r-row">
+          <span class="r-key" style="color:var(--text);font-size:15px;font-weight:700;">🏆 Итого сила</span>
+          <span class="r-val big" id="r-total">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>Фан-гайд по <span>Arm Wrestle Simulator</span> · Roblox · Не аффилирован с Kubo Games</p>
+</footer>
+
+<script>
+function fmtNum(n) {
+  if (n === 0) return '0';
+  const abs = Math.abs(n);
+  if (abs >= 1e18) return (n/1e18).toFixed(2) + 'Qa';
+  if (abs >= 1e15) return (n/1e15).toFixed(2) + 'Qd';
+  if (abs >= 1e12) return (n/1e12).toFixed(2) + 'T';
+  if (abs >= 1e9)  return (n/1e9).toFixed(2)  + 'B';
+  if (abs >= 1e6)  return (n/1e6).toFixed(2)  + 'M';
+  if (abs >= 1e3)  return (n/1e3).toFixed(2)  + 'K';
+  return n.toFixed(2);
+}
+
+function calculate() {
+  const baseRaw  = parseFloat(document.getElementById('baseVal').value) || 7.6;
+  const unit     = parseFloat(document.getElementById('unitSel').value);
+  const variant  = parseFloat(document.getElementById('variantSel').value);
+  const size     = parseFloat(document.getElementById('sizeSel').value);
+  const mut      = parseFloat(document.getElementById('mutSel').value);
+  const lvl      = Math.min(250, Math.max(1, parseInt(document.getElementById('lvlVal').value) || 1));
+  const count    = Math.min(40,  Math.max(1, parseInt(document.getElementById('countVal').value) || 1));
+  const otherRaw = parseFloat(document.getElementById('otherVal').value) || 0;
+
+  const base    = baseRaw * unit;
+  const other   = otherRaw * unit;
+  // Level multiplier: lvl 1 = ×1, lvl 250 = ×3.5 (каждый lvl +1% т.е. (lvl-1)/100)
+  const lvlMult = 1 + (lvl - 1) / 100;
+  const single  = base * variant * size * mut * lvlMult;
+  const multiTotal = single * count;
+  const grand   = multiTotal + other;
+
+  document.getElementById('r-base').textContent  = fmtNum(base);
+  document.getElementById('r-var').textContent   = '×' + variant;
+  document.getElementById('r-size').textContent  = '×' + size;
+  document.getElementById('r-mut').textContent   = '×' + mut;
+  document.getElementById('r-lvl').textContent   = '×' + lvlMult.toFixed(2) + ' (Lvl ' + lvl + ')';
+  document.getElementById('r-one').textContent   = fmtNum(single);
+  document.getElementById('r-multi').textContent = fmtNum(single) + ' × ' + count + ' = ' + fmtNum(multiTotal);
+  document.getElementById('r-other').textContent = other > 0 ? '+' + fmtNum(other) : 'Нет';
+  document.getElementById('r-total').textContent = fmtNum(grand);
+
+  const res = document.getElementById('calcResult');
+  res.classList.remove('show');
+  void res.offsetWidth;
+  res.classList.add('show');
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
+</script>
+</body>
+</html>
